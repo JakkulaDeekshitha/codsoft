@@ -1,0 +1,159 @@
+Set Up the Project Structure
+
+- /ecommerce-website
+  - /public
+    - index.html
+    - products.html
+    - cart.html
+    - checkout.html
+    - /styles
+      - styles.css
+    - /scripts
+      - main.js
+  - server.js
+  - /data
+    - products.json
+  - /node_modules
+  - package.json
+
+
+Install Dependencies
+
+npm init -y
+npm install express body-parser
+
+
+Write HTML and CSS
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/styles/styles.css">
+    <title>E-Commerce Website</title>
+</head>
+<body>
+    <header>
+        <h1>E-Commerce Website</h1>
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/products">Products</a></li>
+                <li><a href="/cart">Cart</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div id="content">
+        <!-- Home Page Content Goes Here -->
+    </div>
+
+    <script src="/scripts/main.js"></script>
+</body>
+</html>
+
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    background-color: #333;
+    color: #fff;
+    padding: 10px;
+}
+
+nav ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+nav ul li {
+    display: inline;
+    margin-right: 20px;
+}
+
+#content {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+}
+
+
+Write JavaScript for Front End (main.js)
+
+
+document.addEventListener('DOMContentLoaded', function () {
+    // Fetch and display products
+    fetchProducts();
+
+    // Event listener for adding products to the cart
+    document.getElementById('content').addEventListener('click', function (event) {
+        if (event.target.classList.contains('add-to-cart')) {
+            addToCart(event.target.dataset.productId);
+        }
+    });
+});
+
+function fetchProducts() {
+    // Fetch products from the server (in a real app, this would be an API call)
+    fetch('/api/products')
+        .then(response => response.json())
+        .then(products => displayProducts(products))
+        .catch(error => console.error('Error fetching products:', error));
+}
+
+function displayProducts(products) {
+    const content = document.getElementById('content');
+    content.innerHTML = '<h2>Featured Products</h2>';
+
+    products.forEach(product => {
+        const productElement = document.createElement('div');
+        productElement.innerHTML = `
+            <h3>${product.name}</h3>
+            <p>${product.description}</p>
+            <p>Price: $${product.price.toFixed(2)}</p>
+            <button class="add-to-cart" data-product-id="${product.id}">Add to Cart</button>
+            <hr>
+        `;
+        content.appendChild(productElement);
+    });
+}
+
+function addToCart(productId) {
+    // In a real app, you would add the product to the user's cart (possibly in a server session)
+    alert(`Product added to cart. Product ID: ${productId}`);
+}
+
+
+Set Up the Back-End Server (server.js)
+
+
+const express = require('express');
+const bodyParser = require('body-parser');
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(express.static('public'));
+app.use(bodyParser.json());
+
+// Routes
+app.get('/api/products', (req, res) => {
+    // In a real app, this would be replaced with a database query
+    const products = require('./data/products.json');
+    res.json(products);
+});
+
+// Start the server
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
+
+
+Run the Application
+
+node server.js
