@@ -1,0 +1,196 @@
+ Set Up the Project Structure
+
+- /chat-app
+  - index.html
+  - styles.css
+  - server.js
+  - /public
+    - script.js
+    - /styles
+      - chat.css
+  - /node_modules
+  - package.json
+
+ Install Dependencies
+
+npm init -y
+npm install express socket.io
+
+
+Write HTML and CSS
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/styles/chat.css">
+    <title>Real-Time Chat</title>
+</head>
+<body>
+    <div id="chat-container">
+        <div id="user-list"></div>
+        <div id="chat">
+            <div id="messages"></div>
+            <input type="text" id="message-input" placeholder="Type your message...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
+
+/public/styles/chat.css
+
+
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+#chat-container {
+    display: flex;
+}
+
+#user-list {
+    flex: 1;
+    padding: 10px;
+    border-right: 1px solid #ccc;
+}
+
+#chat {
+    flex: 3;
+    padding: 10px;
+}
+
+#messages {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+#message-input {
+    width: 80%;
+    padding: 5px;
+}
+
+button {
+    padding: 5px;
+}
+
+
+Write JavaScript for Client-Side (script.js)
+
+
+document.addEventListener('DOMContentLoaded', function () {
+    const socket = io();
+
+    // Get user name (for simplicity, you can replace it with proper authentication)
+    const username = prompt('Enter your name:');
+
+    // Emit the username to the server
+    socket.emit('new-user', username);
+
+    // Listen for incoming messages
+    socket.on('chat-message', function (data) {
+        appendMessage(`${data.username}: ${data.message}`);
+    });
+
+    // Listen for user list updates
+    socket.on('user-list', function (users) {
+        updateUserList(users);
+    });
+
+    // Listen for user disconnect
+    socket.on('user-disconnect', function (username) {
+        appendMessage(`${username} has left the chat`);
+    });
+
+    // Function to send a message
+    window.sendMessage = function () {
+        const messageInput = document.getElementById('message-input');
+        const message = messageInput.value.trim();
+
+        if (message !== '') {
+            socket.emit('send-chat-message', message);
+            appendMessage(`You: ${message}`);
+            messageInput.value = '';
+        }
+    };
+
+    // Function to append a message to the chat
+    function appendMessage(message) {
+        const messagesContainer = document.getElementById('messages');
+        const messageElement = document.createElement('div');
+        messageElement.textContent = message;
+        messagesContainer.appendChild(messageElement);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight; // Scroll to the bottom
+    }
+
+    // Function to update the user list
+    function updateUserList(users) {
+        const userListContainer = document.getElementById('user-list');
+        userListContainer.innerHTML = '<h2>Users</h2>';
+        
+        users.forEach(user => {
+            const userElement = document.createElement('div');
+            userElement.textContent = user;
+            userListContainer.appendChild(userElement);
+        });
+    }
+});
+
+Write the Server-Side Code (server.js)
+
+const express = require('express');
+const http = require('http');
+const socketIO = require('socket.io');
+
+const app = express();
+const server = http.createServer(app);
+const io = socketIO(server);
+
+const users = [];
+
+app.use(express.static('public'));
+
+io.on('connection', (socket) => {
+    // Listen for new user connections
+    socket.on('new-user', (username) => {
+        users.push(username);
+        io.emit('user-list', users);
+        socket.broadcast.emit('chat-message', { username: 'System', message: `${username} has joined the chat` });
+    });
+
+    // Listen for incoming messages
+    socket.on('send-chat-message', (message) => {
+        io.emit('chat-message', { username: socket.username, message });
+    });
+
+    // Listen for disconnect
+    socket.on('disconnect', () => {
+        const index = users.indexOf(socket.username);
+        if (index !== -1) {
+            users.splice(index, 1);
+            io.emit('user-list', users);
+            io.emit('user-disconnect', socket.username);
+        }
+    });
+});
+
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
+
+
+Run the Application
+
+node server.js
+
+
+
+
+
